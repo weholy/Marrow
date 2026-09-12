@@ -5,7 +5,7 @@ import SwiftData
 final class Attachment {
     var filename: String
     var utTypeIdentifier: String?
-    var data: Data
+    @Attribute(.externalStorage) var data: Data
     var message: Message?
 
     init(filename: String, utTypeIdentifier: String?, data: Data) {

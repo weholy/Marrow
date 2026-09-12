@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
+import UniformTypeIdentifiers
 
 struct ChatView: View {
     @Binding var isSidebarPresented: Bool
@@ -9,6 +11,10 @@ struct ChatView: View {
     @State private var isStreaming = false
     @State private var streamingReply = ""
     @State private var streamingReasoning = ""
+    @State private var pendingAttachments: [Attachment] = []
+    @State private var isShowingPhotosPicker = false
+    @State private var isShowingFileImporter = false
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,9 +27,36 @@ struct ChatView: View {
                 Spacer()
                 chips
             }
+            if !pendingAttachments.isEmpty {
+                pendingAttachmentsRow
+            }
             composer
         }
         .background(Palette.background.ignoresSafeArea())
+        .photosPicker(isPresented: $isShowingPhotosPicker, selection: $selectedPhotoItems, matching: .any(of: [.images, .videos]))
+        .onChange(of: selectedPhotoItems) { _, items in
+            guard !items.isEmpty else { return }
+            Task {
+                for item in items {
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        let typeID = item.supportedContentTypes.first?.identifier
+                        let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "bin"
+                        pendingAttachments.append(Attachment(filename: "Вложение.\(ext)", utTypeIdentifier: typeID, data: data))
+                    }
+                }
+                selectedPhotoItems = []
+            }
+        }
+        .fileImporter(isPresented: $isShowingFileImporter, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+            guard case .success(let urls) = result else { return }
+            for url in urls {
+                guard url.startAccessingSecurityScopedResource() else { continue }
+                defer { url.stopAccessingSecurityScopedResource() }
+                if let data = try? Data(contentsOf: url) {
+                    pendingAttachments.append(Attachment(filename: url.lastPathComponent, utTypeIdentifier: nil, data: data))
+                }
+            }
+        }
     }
 
     private var header: some View {
@@ -103,6 +136,7 @@ struct ChatView: View {
                     MessageBubble(
                         role: message.role,
                         text: message.text,
+                        attachments: message.attachments,
                         reasoningText: message.reasoningText,
                         reasoningSeconds: message.reasoningSeconds
                     )
@@ -121,9 +155,47 @@ struct ChatView: View {
         }
     }
 
+    private var pendingAttachmentsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(pendingAttachments.enumerated()), id: \.offset) { index, attachment in
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc")
+                            .font(.system(size: 11))
+                        Text(attachment.filename)
+                            .font(.system(size: 12))
+                            .lineLimit(1)
+                        Button {
+                            pendingAttachments.remove(at: index)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 13))
+                        }
+                    }
+                    .foregroundStyle(Palette.textPrimary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .glassEffect(.regular, in: .capsule)
+                }
+            }
+            .padding(.horizontal, 14)
+        }
+        .padding(.bottom, 8)
+    }
+
     private var composer: some View {
         HStack(spacing: 10) {
-            Button {
+            Menu {
+                Button {
+                    isShowingFileImporter = true
+                } label: {
+                    Label("Прикрепить файл", systemImage: "folder")
+                }
+                Button {
+                    isShowingPhotosPicker = true
+                } label: {
+                    Label("Прикрепить фото или видео", systemImage: "photo")
+                }
             } label: {
                 Image(systemName: "plus")
             }
@@ -143,7 +215,7 @@ struct ChatView: View {
                 }
                 .frame(width: 32, height: 32)
                 .background(Palette.textPrimary, in: .circle)
-                .opacity(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isStreaming ? 0.4 : 1)
+                .opacity((draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && pendingAttachments.isEmpty) || isStreaming ? 0.4 : 1)
                 .disabled(isStreaming)
             }
             .padding(.leading, 16)
@@ -157,19 +229,25 @@ struct ChatView: View {
 
     private func send() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isStreaming else { return }
+        guard !text.isEmpty || !pendingAttachments.isEmpty, !isStreaming else { return }
 
         let chat: Chat
         if let existing = currentChat {
             chat = existing
         } else {
-            chat = Chat(title: String(text.prefix(40)))
+            chat = Chat(title: text.isEmpty ? "Вложение" : String(text.prefix(40)))
             context.insert(chat)
             currentChat = chat
         }
 
         let userMessage = Message(role: .user, text: text)
         userMessage.chat = chat
+        for attachment in pendingAttachments {
+            attachment.message = userMessage
+            userMessage.attachments.append(attachment)
+            context.insert(attachment)
+        }
+        pendingAttachments = []
         chat.messages.append(userMessage)
         chat.updatedAt = .now
         draft = ""

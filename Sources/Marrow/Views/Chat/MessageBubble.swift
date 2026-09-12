@@ -3,6 +3,7 @@ import SwiftUI
 struct MessageBubble: View {
     let role: MessageRole
     let text: String
+    var attachments: [Attachment] = []
     var reasoningText: String? = nil
     var reasoningSeconds: Int? = nil
     var isStreamingReasoning: Bool = false
@@ -17,20 +18,37 @@ struct MessageBubble: View {
 
             HStack {
                 if isUser { Spacer(minLength: 40) }
-                if isUser {
-                    Text(text)
-                        .foregroundStyle(Palette.textPrimary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Palette.surfaceElevated, in: .rect(cornerRadius: 18))
-                } else {
-                    FormattedMessageView(text: text)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Palette.surface, in: .rect(cornerRadius: 18))
+                VStack(alignment: .leading, spacing: 8) {
+                    if !attachments.isEmpty {
+                        attachmentRow
+                    }
+                    if isUser {
+                        if !text.isEmpty {
+                            Text(text)
+                                .foregroundStyle(Palette.textPrimary)
+                        }
+                    } else {
+                        FormattedMessageView(text: text)
+                    }
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(isUser ? Palette.surfaceElevated : Palette.surface, in: .rect(cornerRadius: 18))
                 if !isUser { Spacer(minLength: 40) }
             }
+        }
+    }
+
+    private var attachmentRow: some View {
+        ForEach(Array(attachments.enumerated()), id: \.offset) { _, attachment in
+            HStack(spacing: 6) {
+                Image(systemName: attachment.utTypeIdentifier?.hasPrefix("public.image") == true ? "photo" : "doc")
+                    .font(.system(size: 11))
+                Text(attachment.filename)
+                    .font(.system(size: 12))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(Palette.textSecondary)
         }
     }
 }
