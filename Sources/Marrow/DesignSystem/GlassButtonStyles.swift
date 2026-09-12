@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct GlassIconButtonStyle: ButtonStyle {
+    var isActive: Bool = false
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 16, weight: .medium))
-            .foregroundStyle(Palette.textPrimary)
+            .foregroundStyle(isActive ? Palette.background : Palette.textPrimary)
             .frame(width: 44, height: 44)
-            .glassEffect(.regular.interactive(), in: .circle)
+            .glassEffect(isActive ? .regular.tint(Palette.textPrimary).interactive() : .regular.interactive(), in: .circle)
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }

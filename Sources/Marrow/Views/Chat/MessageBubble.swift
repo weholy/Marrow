@@ -4,6 +4,8 @@ struct MessageBubble: View {
     let role: MessageRole
     let text: String
     var attachments: [Attachment] = []
+    var sourceTitles: [String] = []
+    var sourceURLs: [String] = []
     var reasoningText: String? = nil
     var reasoningSeconds: Int? = nil
     var isStreamingReasoning: Bool = false
@@ -35,6 +37,26 @@ struct MessageBubble: View {
                 .padding(.vertical, 10)
                 .background(isUser ? Palette.surfaceElevated : Palette.surface, in: .rect(cornerRadius: 18))
                 if !isUser { Spacer(minLength: 40) }
+            }
+
+            if !sourceURLs.isEmpty {
+                sourcesRow
+            }
+        }
+    }
+
+    private var sourcesRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(sourceURLs.enumerated()), id: \.offset) { index, url in
+                    Text(sourceTitles.indices.contains(index) ? sourceTitles[index] : url)
+                        .font(.system(size: 11.5))
+                        .lineLimit(1)
+                        .foregroundStyle(Palette.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Palette.surfaceElevated, in: .capsule)
+                }
             }
         }
     }

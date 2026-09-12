@@ -12,6 +12,8 @@ struct ChatView: View {
     @State private var streamingReply = ""
     @State private var streamingReasoning = ""
     @State private var pendingAttachments: [Attachment] = []
+    @State private var webSearchEnabled = false
+    @State private var isSearchingWeb = false
     @State private var isShowingPhotosPicker = false
     @State private var isShowingFileImporter = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
@@ -137,11 +139,21 @@ struct ChatView: View {
                         role: message.role,
                         text: message.text,
                         attachments: message.attachments,
+                        sourceTitles: message.sourceTitles,
+                        sourceURLs: message.sourceURLs,
                         reasoningText: message.reasoningText,
                         reasoningSeconds: message.reasoningSeconds
                     )
                 }
-                if isStreaming {
+                if isSearchingWeb {
+                    Text("Ищу в интернете…")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Palette.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Palette.surface, in: .rect(cornerRadius: 14))
+                }
+                if isStreaming && !isSearchingWeb {
                     MessageBubble(
                         role: .assistant,
                         text: streamingReply.isEmpty ? "…" : streamingReply,
@@ -200,6 +212,13 @@ struct ChatView: View {
                 Image(systemName: "plus")
             }
             .buttonStyle(GlassIconButtonStyle())
+
+            Button {
+                webSearchEnabled.toggle()
+            } label: {
+                Image(systemName: "globe")
+            }
+            .buttonStyle(GlassIconButtonStyle(isActive: webSearchEnabled))
 
             HStack(spacing: 8) {
                 TextField("Спросите что угодно", text: $draft)
@@ -260,9 +279,26 @@ struct ChatView: View {
         streamingReply = ""
         streamingReasoning = ""
 
-        let history = chat.messages
+        var history = chat.messages
             .sorted(by: { $0.createdAt < $1.createdAt })
             .map { GroqMessage(role: $0.role.rawValue, content: $0.text) }
+
+        var sources: [WebSearchResult] = []
+        if webSearchEnabled, let query = chat.messages.last(where: { $0.role == .user })?.text, !query.isEmpty {
+            isSearchingWeb = true
+            let web = TavilySearchClient(apiKey: AppSecrets.tavilyKey)
+            if let results = try? await web.search(query: query) {
+                sources = results
+                let topURLs = Array(results.prefix(2)).map(\.url)
+                let fullTexts = await web.extractFullText(urls: topURLs)
+                let context = results.map { result -> String in
+                    let body = fullTexts[result.url] ?? result.snippet
+                    return "Источник: \(result.title) (\(result.url))\n\(body.prefix(2000))"
+                }.joined(separator: "\n\n")
+                history.insert(GroqMessage(role: "system", content: "Результаты поиска в интернете:\n\n\(context)"), at: 0)
+            }
+            isSearchingWeb = false
+        }
 
         let client = GroqStreamingClient(apiKey: AppSecrets.groqKey)
         let startedAt = Date()
@@ -283,6 +319,8 @@ struct ChatView: View {
             let reply = Message(role: .assistant, text: streamingReply)
             reply.reasoningText = streamingReasoning.isEmpty ? nil : streamingReasoning
             reply.reasoningSeconds = reasoningSeconds
+            reply.sourceTitles = sources.map(\.title)
+            reply.sourceURLs = sources.map(\.url)
             reply.chat = chat
             chat.messages.append(reply)
         } catch GroqError.missingKey {

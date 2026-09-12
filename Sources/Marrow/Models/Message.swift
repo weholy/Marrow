@@ -8,6 +8,8 @@ final class Message {
     var createdAt: Date
     var reasoningText: String?
     var reasoningSeconds: Int?
+    var sourceTitles: [String] = []
+    var sourceURLs: [String] = []
     var chat: Chat?
 
     @Relationship(deleteRule: .cascade, inverse: \Attachment.message)
