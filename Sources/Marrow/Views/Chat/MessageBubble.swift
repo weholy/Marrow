@@ -1,14 +1,15 @@
 import SwiftUI
 
 struct MessageBubble: View {
-    let message: Message
+    let role: MessageRole
+    let text: String
 
-    private var isUser: Bool { message.role == .user }
+    private var isUser: Bool { role == .user }
 
     var body: some View {
         HStack {
             if isUser { Spacer(minLength: 40) }
-            Text(message.text)
+            Text(text)
                 .foregroundStyle(Palette.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)

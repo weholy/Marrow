@@ -6,6 +6,8 @@ struct ChatView: View {
     @Binding var currentChat: Chat?
     @Environment(\.modelContext) private var context
     @State private var draft = ""
+    @State private var isStreaming = false
+    @State private var streamingReply = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,7 +41,7 @@ struct ChatView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Palette.textPrimary)
                     .lineLimit(1)
-                Text("Kimi K2")
+                Text(ModelCatalog.model(for: currentChat?.modelID).displayName)
                     .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(Palette.accent)
                     .padding(.horizontal, 9)
@@ -97,7 +99,10 @@ struct ChatView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 ForEach(chat.messages.sorted(by: { $0.createdAt < $1.createdAt })) { message in
-                    MessageBubble(message: message)
+                    MessageBubble(role: message.role, text: message.text)
+                }
+                if isStreaming {
+                    MessageBubble(role: .assistant, text: streamingReply.isEmpty ? "…" : streamingReply)
                 }
             }
             .padding(16)
@@ -115,6 +120,7 @@ struct ChatView: View {
             TextField("Спросите что угодно", text: $draft)
                 .foregroundStyle(Palette.textPrimary)
                 .tint(Palette.accent)
+                .disabled(isStreaming)
 
             Button {
                 send()
@@ -124,7 +130,8 @@ struct ChatView: View {
             }
             .frame(width: 32, height: 32)
             .background(Palette.textPrimary, in: .circle)
-            .opacity(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.4 : 1)
+            .opacity(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isStreaming ? 0.4 : 1)
+            .disabled(isStreaming)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -135,7 +142,7 @@ struct ChatView: View {
 
     private func send() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, !isStreaming else { return }
 
         let chat: Chat
         if let existing = currentChat {
@@ -146,10 +153,44 @@ struct ChatView: View {
             currentChat = chat
         }
 
-        let message = Message(role: .user, text: text)
-        message.chat = chat
-        chat.messages.append(message)
+        let userMessage = Message(role: .user, text: text)
+        userMessage.chat = chat
+        chat.messages.append(userMessage)
         chat.updatedAt = .now
         draft = ""
+
+        Task { await requestReply(for: chat) }
+    }
+
+    private func requestReply(for chat: Chat) async {
+        isStreaming = true
+        streamingReply = ""
+
+        let history = chat.messages
+            .sorted(by: { $0.createdAt < $1.createdAt })
+            .map { GroqMessage(role: $0.role.rawValue, content: $0.text) }
+
+        let client = GroqStreamingClient(apiKey: AppSecrets.groqKey)
+
+        do {
+            for try await token in client.stream(model: chat.modelID, messages: history) {
+                streamingReply += token
+            }
+            let reply = Message(role: .assistant, text: streamingReply)
+            reply.chat = chat
+            chat.messages.append(reply)
+        } catch GroqError.missingKey {
+            let reply = Message(role: .assistant, text: "Нет ключа Groq — добавьте GROQ_API_KEY в секреты репозитория.")
+            reply.chat = chat
+            chat.messages.append(reply)
+        } catch {
+            let reply = Message(role: .assistant, text: "Не получилось получить ответ: \(error.localizedDescription)")
+            reply.chat = chat
+            chat.messages.append(reply)
+        }
+
+        chat.updatedAt = .now
+        isStreaming = false
+        streamingReply = ""
     }
 }

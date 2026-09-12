@@ -13,7 +13,7 @@ final class Chat {
     @Relationship(deleteRule: .cascade, inverse: \Message.chat)
     var messages: [Message]
 
-    init(title: String, modelID: String = "kimi-k2-thinking") {
+    init(title: String, modelID: String = "moonshotai/kimi-k2-thinking") {
         self.title = title
         self.createdAt = .now
         self.updatedAt = .now
