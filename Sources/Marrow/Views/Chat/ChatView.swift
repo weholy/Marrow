@@ -32,7 +32,7 @@ struct ChatView: View {
             }
             composer
         }
-        .background(Palette.background.ignoresSafeArea())
+        .background(AmbientBackground().ignoresSafeArea())
         .photosPicker(isPresented: $isShowingPhotosPicker, selection: $selectedPhotoItems, matching: .any(of: [.images, .videos]))
         .onChange(of: selectedPhotoItems) { _, items in
             guard !items.isEmpty else { return }
@@ -97,12 +97,12 @@ struct ChatView: View {
     }
 
     private var welcome: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             Text("Что решаем?")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(Palette.textPrimary)
             Text("Текст, файлы, картинки — что угодно.")
-                .font(.system(size: 14))
+                .font(.system(size: 15))
                 .foregroundStyle(Palette.textSecondary)
         }
     }
