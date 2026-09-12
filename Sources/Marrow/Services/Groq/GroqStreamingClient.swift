@@ -5,11 +5,16 @@ enum GroqError: Error {
     case badStatus(Int)
 }
 
+enum GroqToken {
+    case reasoning(String)
+    case content(String)
+}
+
 struct GroqStreamingClient {
     var apiKey: String?
     private let endpoint = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
 
-    func stream(model: String, messages: [GroqMessage]) -> AsyncThrowingStream<String, Error> {
+    func stream(model: String, messages: [GroqMessage]) -> AsyncThrowingStream<GroqToken, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -45,9 +50,14 @@ struct GroqStreamingClient {
                         guard let data = jsonText.data(using: .utf8),
                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                               let choices = json["choices"] as? [[String: Any]],
-                              let delta = choices.first?["delta"] as? [String: Any],
-                              let content = delta["content"] as? String else { continue }
-                        continuation.yield(content)
+                              let delta = choices.first?["delta"] as? [String: Any] else { continue }
+
+                        if let reasoning = delta["reasoning"] as? String, !reasoning.isEmpty {
+                            continuation.yield(.reasoning(reasoning))
+                        }
+                        if let content = delta["content"] as? String, !content.isEmpty {
+                            continuation.yield(.content(content))
+                        }
                     }
                     continuation.finish()
                 } catch {

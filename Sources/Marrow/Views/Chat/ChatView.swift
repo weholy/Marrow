@@ -43,10 +43,10 @@ struct ChatView: View {
                     .lineLimit(1)
                 Text(ModelCatalog.model(for: currentChat?.modelID).displayName)
                     .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(Palette.accent)
+                    .foregroundStyle(Palette.textSecondary)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 2.5)
-                    .background(Palette.accentSoft, in: .rect(cornerRadius: 8))
+                    .background(Palette.surfaceElevated, in: .rect(cornerRadius: 8))
             }
 
             Spacer()
@@ -110,32 +110,35 @@ struct ChatView: View {
     }
 
     private var composer: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Button {
             } label: {
                 Image(systemName: "plus")
             }
             .buttonStyle(GlassIconButtonStyle())
 
-            TextField("Спросите что угодно", text: $draft)
-                .foregroundStyle(Palette.textPrimary)
-                .tint(Palette.accent)
-                .disabled(isStreaming)
+            HStack(spacing: 8) {
+                TextField("Спросите что угодно", text: $draft)
+                    .foregroundStyle(Palette.textPrimary)
+                    .tint(Palette.textPrimary)
+                    .disabled(isStreaming)
 
-            Button {
-                send()
-            } label: {
-                Image(systemName: "arrow.up")
-                    .foregroundStyle(Palette.background)
+                Button {
+                    send()
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .foregroundStyle(Palette.background)
+                }
+                .frame(width: 32, height: 32)
+                .background(Palette.textPrimary, in: .circle)
+                .opacity(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isStreaming ? 0.4 : 1)
+                .disabled(isStreaming)
             }
-            .frame(width: 32, height: 32)
-            .background(Palette.textPrimary, in: .circle)
-            .opacity(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isStreaming ? 0.4 : 1)
-            .disabled(isStreaming)
+            .padding(.leading, 16)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
+            .glassEffect(.regular, in: .capsule)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .glassEffect(.regular, in: .capsule)
         .padding(.horizontal, 14)
         .padding(.bottom, 10)
     }

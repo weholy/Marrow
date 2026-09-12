@@ -3,6 +3,16 @@ options:
   deploymentTarget:
     iOS: "26.0"
   createIntermediateGroups: true
+packages:
+  MarkdownUI:
+    url: https://github.com/gonzalezreal/swift-markdown-ui
+    from: 2.4.0
+  LaTeXSwiftUI:
+    url: https://github.com/colinc86/LaTeXSwiftUI
+    from: 1.3.0
+  Highlightr:
+    url: https://github.com/raspu/Highlightr
+    from: 2.2.0
 targets:
   Marrow:
     type: application
@@ -30,3 +40,10 @@ targets:
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
+    dependencies:
+      - package: MarkdownUI
+        product: MarkdownUI
+      - package: LaTeXSwiftUI
+        product: LaTeXSwiftUI
+      - package: Highlightr
+        product: Highlightr

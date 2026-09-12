@@ -7,6 +7,7 @@ final class Message {
     var text: String
     var createdAt: Date
     var reasoningText: String?
+    var reasoningSeconds: Int?
     var chat: Chat?
 
     @Relationship(deleteRule: .cascade, inverse: \Attachment.message)

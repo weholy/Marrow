@@ -76,7 +76,7 @@ struct SidebarView: View {
                 .foregroundStyle(Palette.textSecondary)
             TextField("Поиск", text: $searchText)
                 .foregroundStyle(Palette.textPrimary)
-                .tint(Palette.accent)
+                .tint(Palette.textPrimary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -167,7 +167,7 @@ struct SidebarView: View {
             } label: {
                 Label("Chat", systemImage: "square.and.pencil")
             }
-            .buttonStyle(GlassCapsuleButtonStyle(tinted: true))
+            .buttonStyle(GlassCapsuleButtonStyle(filled: true))
         }
         .padding(16)
     }
