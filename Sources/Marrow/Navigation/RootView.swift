@@ -2,10 +2,11 @@ import SwiftUI
 
 struct RootView: View {
     @State private var isSidebarPresented = false
+    @State private var currentChat: Chat?
 
     var body: some View {
         ZStack(alignment: .leading) {
-            ChatView(isSidebarPresented: $isSidebarPresented)
+            ChatView(isSidebarPresented: $isSidebarPresented, currentChat: $currentChat)
 
             if isSidebarPresented {
                 Color.black.opacity(0.45)
@@ -13,7 +14,7 @@ struct RootView: View {
                     .onTapGesture { isSidebarPresented = false }
                     .transition(.opacity)
 
-                SidebarView(isPresented: $isSidebarPresented)
+                SidebarView(isPresented: $isSidebarPresented, currentChat: $currentChat)
                     .frame(width: 300)
                     .transition(.move(edge: .leading))
             }
