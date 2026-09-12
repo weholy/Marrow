@@ -1,0 +1,30 @@
+name: Marrow
+options:
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+targets:
+  Marrow:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Sources/Marrow
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.skyredy.marrow
+        PRODUCT_NAME: Marrow
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_FILE: Sources/Marrow/App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_KEY_UILaunchScreen_Generation: NO
+        SUPPORTS_MACCATALYST: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
