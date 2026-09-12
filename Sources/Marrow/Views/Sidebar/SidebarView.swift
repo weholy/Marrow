@@ -14,6 +14,7 @@ struct SidebarView: View {
     @State private var renameText = ""
     @State private var isCreatingFolder = false
     @State private var newFolderName = ""
+    @State private var showSettings = false
 
     private func chats(in folder: Folder?) -> [Chat] {
         allChats.filter { $0.folder == folder && matchesSearch($0) }
@@ -42,6 +43,9 @@ struct SidebarView: View {
             Button("Создать") { commitNewFolder() }
             Button("Отмена", role: .cancel) {}
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
     }
 
     private var renameBinding: Binding<Bool> {
@@ -62,6 +66,7 @@ struct SidebarView: View {
             }
             .buttonStyle(GlassIconButtonStyle())
             Button {
+                showSettings = true
             } label: {
                 Image(systemName: "gearshape")
             }

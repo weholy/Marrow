@@ -5,9 +5,9 @@ struct GlassIconButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, weight: .medium))
+            .font(.system(size: 18, weight: .semibold))
             .foregroundStyle(isActive ? Palette.background : Palette.textPrimary)
-            .frame(width: 44, height: 44)
+            .frame(width: 46, height: 46)
             .glassEffect(isActive ? .regular.tint(Palette.textPrimary).interactive() : .regular.interactive(), in: .circle)
             .opacity(configuration.isPressed ? 0.7 : 1)
     }

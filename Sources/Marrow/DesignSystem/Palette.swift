@@ -1,12 +1,12 @@
 import SwiftUI
 
 enum Palette {
-    static let background = Color(hex: 0x121011)
-    static let surface = Color(hex: 0x1C1918)
-    static let surfaceElevated = Color(hex: 0x242020)
-    static let textPrimary = Color(hex: 0xF5EFEA)
-    static let textSecondary = Color(hex: 0x968C86)
-    static let hairline = Color(hex: 0x2C2725)
+    static let background = Color(hex: 0x121212)
+    static let surface = Color(hex: 0x1C1C1C)
+    static let surfaceElevated = Color(hex: 0x262626)
+    static let textPrimary = Color(hex: 0xF5F5F5)
+    static let textSecondary = Color(hex: 0x999999)
+    static let hairline = Color(hex: 0x2C2C2C)
     static let accent = Color(hex: 0xC2453A)
 
     static var accentSoft: Color { accent.opacity(0.2) }

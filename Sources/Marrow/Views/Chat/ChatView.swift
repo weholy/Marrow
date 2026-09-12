@@ -7,6 +7,7 @@ struct ChatView: View {
     @Binding var isSidebarPresented: Bool
     @Binding var currentChat: Chat?
     @Environment(\.modelContext) private var context
+    @Query private var memoryFacts: [MemoryFact]
     @State private var draft = ""
     @State private var isStreaming = false
     @State private var streamingReply = ""
@@ -230,10 +231,11 @@ struct ChatView: View {
                     send()
                 } label: {
                     Image(systemName: "arrow.up")
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Palette.background)
                 }
-                .frame(width: 32, height: 32)
-                .background(Palette.textPrimary, in: .circle)
+                .frame(width: 40, height: 32)
+                .background(Palette.textPrimary, in: .rect(cornerRadius: 16))
                 .opacity((draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && pendingAttachments.isEmpty) || isStreaming ? 0.4 : 1)
                 .disabled(isStreaming)
             }
@@ -271,6 +273,14 @@ struct ChatView: View {
         chat.updatedAt = .now
         draft = ""
 
+        if text.localizedCaseInsensitiveContains("запомни") {
+            Task {
+                if let fact = await MemoryExtractor.extract(from: text, apiKey: AppSecrets.groqKey) {
+                    context.insert(MemoryFact(text: fact))
+                }
+            }
+        }
+
         Task { await requestReply(for: chat) }
     }
 
@@ -282,6 +292,11 @@ struct ChatView: View {
         var history = chat.messages
             .sorted(by: { $0.createdAt < $1.createdAt })
             .map { GroqMessage(role: $0.role.rawValue, content: $0.text) }
+
+        if !memoryFacts.isEmpty {
+            let factsText = memoryFacts.map { "- \($0.text)" }.joined(separator: "\n")
+            history.insert(GroqMessage(role: "system", content: "Известные факты о пользователе:\n\(factsText)"), at: 0)
+        }
 
         var sources: [WebSearchResult] = []
         if webSearchEnabled, let query = chat.messages.last(where: { $0.role == .user })?.text, !query.isEmpty {
